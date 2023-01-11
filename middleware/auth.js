@@ -1,7 +1,7 @@
 /** Middleware for handling req authorization for routes. */
 
-const jwt = require("jsonwebtoken");
-const { SECRET_KEY } = require("../config");
+const jwt = require('jsonwebtoken');
+const { SECRET_KEY } = require('../config');
 
 /** Middleware: Authenticate user. */
 
@@ -9,6 +9,7 @@ function authenticateJWT(req, res, next) {
   try {
     const tokenFromBody = req.body._token;
     const payload = jwt.verify(tokenFromBody, SECRET_KEY);
+    console.log(payload);
     req.user = payload; // create a current user
     return next();
   } catch (err) {
@@ -20,7 +21,7 @@ function authenticateJWT(req, res, next) {
 
 function ensureLoggedIn(req, res, next) {
   if (!req.user) {
-    return next({ status: 401, message: "Unauthorized" });
+    return next({ status: 401, message: 'Unauthorized' });
   } else {
     return next();
   }
@@ -33,11 +34,14 @@ function ensureCorrectUser(req, res, next) {
     if (req.user.username === req.params.username) {
       return next();
     } else {
-      return next({ status: 401, message: "Unauthorized" });
+      return next({
+        status: 401,
+        message: 'Unauthorized.  Please try a different message.',
+      });
     }
   } catch (err) {
     // errors would happen here if we made a request and req.user is undefined
-    return next({ status: 401, message: "Unauthorized" });
+    return next({ status: 401, message: 'Unauthorized' });
   }
 }
 // end
@@ -45,5 +49,5 @@ function ensureCorrectUser(req, res, next) {
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
-  ensureCorrectUser
+  ensureCorrectUser,
 };

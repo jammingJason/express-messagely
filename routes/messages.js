@@ -1,30 +1,43 @@
-/** GET /:id - get detail of message.
- *
- * => {message: {id,
- *               body,
- *               sent_at,
- *               read_at,
- *               from_user: {username, first_name, last_name, phone},
- *               to_user: {username, first_name, last_name, phone}}
- *
- * Make sure that the currently-logged-in users is either the to or from user.
- *
- **/
+const express = require('express');
+const router = new express.Router();
+const ExpressError = require('../expressError');
+const db = require('../db');
+const bcrypt = require('bcrypt');
+const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require('../config');
+const jwt = require('jsonwebtoken');
+const {
+  ensureLoggedIn,
+  authenticateJWT,
+  ensureCorrectUser,
+} = require('../middleware/auth');
+const messages = require('../models/message');
 
+router.get('/:id', ensureCorrectUser, async (req, res, next) => {
+  try {
+    result = await messages.get(req.params.id);
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+});
 
-/** POST / - post message.
- *
- * {to_username, body} =>
- *   {message: {id, from_username, to_username, body, sent_at}}
- *
- **/
+router.post('/', ensureLoggedIn, async (req, res, next) => {
+  try {
+    const { from_username, to_username, body } = req.body;
+    result = await messages.create({ from_username, to_username, body });
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+});
 
+router.post('/:id/read', ensureCorrectUser, async (req, res, next) => {
+  try {
+    result = await messages.markRead(req.params.id);
+    return res.json(result);
+  } catch (error) {
+    return next(error);
+  }
+});
 
-/** POST/:id/read - mark message as read:
- *
- *  => {message: {id, read_at}}
- *
- * Make sure that the only the intended recipient can mark as read.
- *
- **/
-
+module.exports = router;

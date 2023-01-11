@@ -1,34 +1,70 @@
-/** GET / - get list of users.
- *
- * => {users: [{username, first_name, last_name, phone}, ...]}
- *
- **/
+const express = require('express');
+const router = new express.Router();
+const ExpressError = require('../expressError');
+const db = require('../db');
+const bcrypt = require('bcrypt');
+const { BCRYPT_WORK_FACTOR, SECRET_KEY } = require('../config');
+const jwt = require('jsonwebtoken');
+const {
+  ensureLoggedIn,
+  authenticateJWT,
+  ensureCorrectUser,
+} = require('../middleware/auth');
+const newUser = require('../models/user');
 
+router.get('/', ensureLoggedIn, async (req, res, next) => {
+  try {
+    // const results = await db.query('SELECT * FROM users');
+    return res.json(await newUser.all());
+  } catch (error) {
+    next(error);
+  }
+});
 
-/** GET /:username - get detail of users.
- *
- * => {user: {username, first_name, last_name, phone, join_at, last_login_at}}
- *
- **/
+router.get('/:username', ensureCorrectUser, async (req, res, next) => {
+  try {
+    const anotherUser = await newUser.get(req.params.username);
+    // console.log(anotherUser);
+    if (anotherUser.length === 0) {
+      throw new ExpressError(
+        `The user with the username of '${req.params.username}' can't be found.`,
+        404
+      );
+    }
+    return res.json(anotherUser);
+  } catch (error) {
+    next(error);
+  }
+});
 
+router.get('/:username/from', ensureCorrectUser, async (req, res, next) => {
+  try {
+    const results = await newUser.messagesFrom(req.params.username);
+    if (results.length === 0) {
+      throw new ExpressError(
+        `The user with the username of '${req.params.username}' can't be found.`,
+        404
+      );
+    }
+    return res.json(results);
+  } catch (error) {
+    next(error);
+  }
+});
+router.get('/:username/to', ensureCorrectUser, async (req, res, next) => {
+  try {
+    const results = await newUser.messagesTo(req.params.username);
 
-/** GET /:username/to - get messages to user
- *
- * => {messages: [{id,
- *                 body,
- *                 sent_at,
- *                 read_at,
- *                 from_user: {username, first_name, last_name, phone}}, ...]}
- *
- **/
+    if (results.length === 0) {
+      throw new ExpressError(
+        `The user with the username of '${req.params.username}' can't be found.`,
+        404
+      );
+    }
+    return res.json(results);
+  } catch (error) {
+    next(error);
+  }
+});
 
-
-/** GET /:username/from - get messages from user
- *
- * => {messages: [{id,
- *                 body,
- *                 sent_at,
- *                 read_at,
- *                 to_user: {username, first_name, last_name, phone}}, ...]}
- *
- **/
+module.exports = router;
